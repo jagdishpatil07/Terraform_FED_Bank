@@ -24,20 +24,57 @@ variable "windows_ami" {
 }
 
 # Instance types (defaults set to requested types)
-variable "uat_app_instance_type"   { type = string; default = "t4g.xlarge" }
-variable "uat_db_instance_type"    { type = string; default = "t3g.xlarge" }
-variable "prod_app_instance_type"  { type = string; default = "r7i.xlarge" }
-variable "prod_db_instance_type"   { type = string; default = "t3.xlarge" }
+variable "uat_app_instance_type" {
+  type    = string
+  default = "t4g.xlarge"
+}
+
+variable "uat_db_instance_type" {
+  type    = string
+  default = "t3g.xlarge"
+}
+
+variable "prod_app_instance_type" {
+  type    = string
+  default = "r7i.xlarge"
+}
+
+variable "prod_db_instance_type" {
+  type    = string
+  default = "t3.xlarge"
+}
 
 # Root disk sizes (GB)
-variable "uat_app_root_disk_gb"  { type = number; default = 128 }
-variable "uat_db_root_disk_gb"   { type = number; default = 250 }
-variable "prod_app_root_disk_gb" { type = number; default = 250 }
-variable "prod_db_root_disk_gb"  { type = number; default = 500 }
+variable "uat_app_root_disk_gb" {
+  type    = number
+  default = 128
+}
+
+variable "uat_db_root_disk_gb" {
+  type    = number
+  default = 250
+}
+
+variable "prod_app_root_disk_gb" {
+  type    = number
+  default = 250
+}
+
+variable "prod_db_root_disk_gb" {
+  type    = number
+  default = 500
+}
 
 # VPC CIDRs (leave blank to fill later)
-variable "uat_vpc_cidr"  { type = string; default = "" }
-variable "prod_vpc_cidr" { type = string; default = "" }
+variable "uat_vpc_cidr" {
+  type    = string
+  default = ""
+}
+
+variable "prod_vpc_cidr" {
+  type    = string
+  default = ""
+}
 
 # Client / Customer info (leave blank to fill later)
 variable "client_cidr" {
