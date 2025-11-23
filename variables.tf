@@ -10,25 +10,17 @@ variable "name_prefix" {
   default     = "FEDBank"
 }
 
-# ------------------------------------------------------
-# AMIs (PROVIDE VALID AMIs FOR THE SELECTED REGION)
-# ------------------------------------------------------
-
 variable "ubuntu_ami" {
-  description = "Ubuntu AMI ID for application servers"
+  description = "Ubuntu AMI ID for application servers (optional - will use latest if empty)"
   type        = string
-  default     = ""    # e.g. ami-04ff98ccbfa41c9ad for us-east-1 (Ubuntu 22.04)
+  default     = ""
 }
 
 variable "windows_ami" {
-  description = "Windows Server AMI ID for DB servers"
+  description = "Windows Server AMI ID for DB servers (optional - will use latest if empty)"
   type        = string
-  default     = ""    # e.g. ami-0a669382ea7a5b099 for Windows 2019 in us-east-1
+  default     = ""
 }
-
-# ------------------------------------------------------
-# INSTANCE TYPES
-# ------------------------------------------------------
 
 variable "uat_app_instance_type" {
   description = "Instance type for UAT application server"
@@ -54,10 +46,6 @@ variable "prod_db_instance_type" {
   default     = "t3.xlarge"
 }
 
-# ------------------------------------------------------
-# ROOT DISK SIZES (GB)
-# ------------------------------------------------------
-
 variable "uat_app_root_disk_gb" {
   description = "Root disk size (GB) for UAT app server"
   type        = number
@@ -82,10 +70,6 @@ variable "prod_db_root_disk_gb" {
   default     = 500
 }
 
-# ------------------------------------------------------
-# VPC CIDR BLOCKS
-# ------------------------------------------------------
-
 variable "uat_vpc_cidr" {
   description = "CIDR block for UAT VPC (example: 10.10.0.0/16)"
   type        = string
@@ -98,10 +82,6 @@ variable "prod_vpc_cidr" {
   default     = ""
 }
 
-# ------------------------------------------------------
-# CLIENT / CUSTOMER GATEWAY DETAILS
-# ------------------------------------------------------
-
 variable "client_cidr" {
   description = "Client on-prem CIDR (example: 192.168.100.0/24)"
   type        = string
@@ -113,10 +93,6 @@ variable "customer_gateway_public_ip" {
   type        = string
   default     = ""
 }
-
-# ------------------------------------------------------
-# SSH KEY (OPTIONAL – SSM IS RECOMMENDED)
-# ------------------------------------------------------
 
 variable "fedbank_ssh_key_name" {
   description = "SSH key name for EC2 instances if SSH is required (optional)"
