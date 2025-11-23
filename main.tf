@@ -4,12 +4,41 @@ locals {
 
 data "aws_availability_zones" "az" {}
 
+# ------------------------------
+# Data: AMIs (auto-select if var empty)
+# ------------------------------
+data "aws_ami" "ubuntu" {
+  most_recent = true
+  owners      = ["099720109477"] # Canonical
+  filter {
+    name   = "name"
+    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-arm64-server-*"]
+  }
+  filter {
+    name   = "architecture"
+    values = ["arm64"]
+  }
+}
+
+data "aws_ami" "windows" {
+  most_recent = true
+  owners      = ["amazon"]
+  filter {
+    name   = "name"
+    values = ["Windows_Server-2019-English-Full-Base*"]
+  }
+  filter {
+    name   = "architecture"
+    values = ["x86_64"]
+  }
+}
+
 ##########################
 # VPCs + Private Subnets #
 ##########################
 
 resource "aws_vpc" "uat" {
-  cidr_block = var.uat_vpc_cidr
+  cidr_block           = var.uat_vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -33,7 +62,7 @@ resource "aws_subnet" "uat_db" {
 }
 
 resource "aws_vpc" "prod" {
-  cidr_block = var.prod_vpc_cidr
+  cidr_block           = var.prod_vpc_cidr
   enable_dns_hostnames = true
   enable_dns_support   = true
 
@@ -142,32 +171,33 @@ resource "aws_vpn_connection" "tgw_vpn" {
   tags = { Name = "${local.name_prefix}-tgw-vpn" }
 }
 
-# advertise VPC CIDRs to the customer via the VPN connection routes
-resource "aws_vpn_connection_route" "uat_route" {
-  vpn_connection_id       = aws_vpn_connection.tgw_vpn.id
-  destination_cidr_block  = aws_vpc.uat.cidr_block
-}
-resource "aws_vpn_connection_route" "prod_route" {
-  vpn_connection_id       = aws_vpn_connection.tgw_vpn.id
-  destination_cidr_block  = aws_vpc.prod.cidr_block
-}
+# Note: DO NOT use aws_vpn_connection_route for TGW-based VPNs (AWS API requires TGW route table routes).
+# We will create appropriate TGW routes below instead.
 
-# TGW route table and associations
+# TGW route table
 resource "aws_ec2_transit_gateway_route_table" "tgw_rt" {
   transit_gateway_id = aws_ec2_transit_gateway.tgw.id
   tags = { Name = "${local.name_prefix}-tgw-rt" }
 }
 
-resource "aws_ec2_transit_gateway_route_table_association" "uat_assoc" {
-  transit_gateway_attachment_id = aws_ec2_transit_gateway_vpc_attachment.uat_attach.id
+# Associate attachments into TGW RT — AWS often auto-associates attachments; explicit association is optional.
+# We will not try to associate attachments here to avoid "already associated" errors.
+# Instead, create TGW routes pointing to attachments below.
+
+# create TGW routes: TGW -> VPC attachments
+resource "aws_ec2_transit_gateway_route" "tgw_to_uat" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt.id
-}
-resource "aws_ec2_transit_gateway_route_table_association" "prod_assoc" {
-  transit_gateway_attachment_id = aws_ec2_transit_gateway_vpc_attachment.prod_attach.id
-  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt.id
+  destination_cidr_block         = aws_vpc.uat.cidr_block
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.uat_attach.id
 }
 
-# create TGW route to client CIDR via the VPN
+resource "aws_ec2_transit_gateway_route" "tgw_to_prod" {
+  transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt.id
+  destination_cidr_block         = aws_vpc.prod.cidr_block
+  transit_gateway_attachment_id  = aws_ec2_transit_gateway_vpc_attachment.prod_attach.id
+}
+
+# create TGW route to client CIDR via the VPN attachment (TGW side)
 resource "aws_ec2_transit_gateway_route" "to_client" {
   transit_gateway_route_table_id = aws_ec2_transit_gateway_route_table.tgw_rt.id
   destination_cidr_block         = var.client_cidr
@@ -175,17 +205,9 @@ resource "aws_ec2_transit_gateway_route" "to_client" {
 }
 
 ##################
-# VPC Endpoints for S3 and SSM (no internet required)
+# VPC Interface Endpoints for SSM (no internet required)
 ##################
-resource "aws_vpc_endpoint" "s3" {
-  vpc_id            = aws_vpc.uat.id
-  service_name      = "com.amazonaws.${var.aws_region}.s3"
-  vpc_endpoint_type = "Gateway"
-  route_table_ids   = [aws_route_table.uat_priv_rt.id, aws_route_table.prod_priv_rt.id]
-  tags = { Name = "${local.name_prefix}-vpce-s3" }
-}
 
-# SSM interface endpoints in each VPC
 resource "aws_vpc_endpoint" "ssm_ua" {
   vpc_id            = aws_vpc.uat.id
   service_name      = "com.amazonaws.${var.aws_region}.ssm"
@@ -268,7 +290,6 @@ resource "aws_iam_instance_profile" "ec2_ssm_profile" {
 #################
 # SecurityGroups
 #################
-# UAT app SG - allow SSH (22) from client CIDR and HTTP/HTTPS from client CIDR
 resource "aws_security_group" "uat_app_sg" {
   name        = "${local.name_prefix}-uat-app-sg"
   vpc_id      = aws_vpc.uat.id
@@ -303,7 +324,6 @@ resource "aws_security_group" "uat_app_sg" {
   tags = { Name = "${local.name_prefix}-uat-app-sg" }
 }
 
-# UAT db SG - MSSQL from app SG, RDP from client CIDR
 resource "aws_security_group" "uat_db_sg" {
   name   = "${local.name_prefix}-uat-db-sg"
   vpc_id = aws_vpc.uat.id
@@ -333,7 +353,6 @@ resource "aws_security_group" "uat_db_sg" {
   tags = { Name = "${local.name_prefix}-uat-db-sg" }
 }
 
-# Prod app SG
 resource "aws_security_group" "prod_app_sg" {
   name   = "${local.name_prefix}-prod-app-sg"
   vpc_id = aws_vpc.prod.id
@@ -366,7 +385,6 @@ resource "aws_security_group" "prod_app_sg" {
   tags = { Name = "${local.name_prefix}-prod-app-sg" }
 }
 
-# Prod db SG
 resource "aws_security_group" "prod_db_sg" {
   name   = "${local.name_prefix}-prod-db-sg"
   vpc_id = aws_vpc.prod.id
@@ -399,9 +417,8 @@ resource "aws_security_group" "prod_db_sg" {
 #################
 # EC2 Instances
 #################
-# UAT App (Ubuntu)
 resource "aws_instance" "uat_app" {
-  ami                         = var.ubuntu_ami
+  ami                         = coalesce(var.ubuntu_ami, data.aws_ami.ubuntu.id)
   instance_type               = var.uat_app_instance_type
   subnet_id                   = aws_subnet.uat_app.id
   vpc_security_group_ids      = [aws_security_group.uat_app_sg.id]
@@ -418,9 +435,8 @@ resource "aws_instance" "uat_app" {
   tags = { Name = "${local.name_prefix}-uat-app" }
 }
 
-# UAT DB (Windows)
 resource "aws_instance" "uat_db" {
-  ami                         = var.windows_ami
+  ami                         = coalesce(var.windows_ami, data.aws_ami.windows.id)
   instance_type               = var.uat_db_instance_type
   subnet_id                   = aws_subnet.uat_db.id
   vpc_security_group_ids      = [aws_security_group.uat_db_sg.id]
@@ -437,9 +453,8 @@ resource "aws_instance" "uat_db" {
   tags = { Name = "${local.name_prefix}-uat-db" }
 }
 
-# Prod App (Linux)
 resource "aws_instance" "prod_app" {
-  ami                         = var.ubuntu_ami
+  ami                         = coalesce(var.ubuntu_ami, data.aws_ami.ubuntu.id)
   instance_type               = var.prod_app_instance_type
   subnet_id                   = aws_subnet.prod_app.id
   vpc_security_group_ids      = [aws_security_group.prod_app_sg.id]
@@ -456,9 +471,8 @@ resource "aws_instance" "prod_app" {
   tags = { Name = "${local.name_prefix}-prod-app" }
 }
 
-# Prod DB (Windows)
 resource "aws_instance" "prod_db" {
-  ami                         = var.windows_ami
+  ami                         = coalesce(var.windows_ami, data.aws_ami.windows.id)
   instance_type               = var.prod_db_instance_type
   subnet_id                   = aws_subnet.prod_db.id
   vpc_security_group_ids      = [aws_security_group.prod_db_sg.id]
