@@ -1,0 +1,42 @@
+Install AWS CLI:-
+- configure aws cli
+Install terraform:-
+- create project 
+  -  mkdir fedbank-infra
+  -  cd fedbank-infra
+  - Git clone URL
+
+terraform validate
+terraform plan
+terraform apply -auto-approve
+
+
+
+--------------------------------------------
+
+# FEDBank - Terraform (UAT + PROD + TGW + VPN + EC2) - Runbook
+
+Diagram: /mnt/data/722541f7-fd84-41e2-b606-983c96cb2b13.png
+
+## Files
+- provider.tf
+- variables.tf
+- main.tf
+- outputs.tf
+- terraform.tfvars.example
+
+## Before you start
+1. Install Terraform & AWS CLI.
+2. Create an AWS IAM user with privileges: VPC, EC2, IAM, Transit Gateway, VPN, EC2:RunInstances, SSM.
+3. Configure AWS CLI: `aws configure`.
+
+## Steps to deploy
+1. Copy `terraform.tfvars.example` to `terraform.tfvars` and fill blanks (AMIs, CIDRs, region, client GW IP).
+2. Initialize:
+
+3. Validate:
+
+4. Plan:
+
+5. Apply:
+
