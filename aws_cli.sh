@@ -10,9 +10,10 @@ sudo apt install unzip -y
 
 # Detect architecture (x86_64 for Intel/AMD, aarch64 for ARM/Graviton)
 ARCH=$(uname -m)
-if [[ "$ARCH" == "x86_64" ]]; then
+
+if [ "$ARCH" = "x86_64" ]; then
     AWSCLI_ZIP="awscli-exe-linux-x86_64.zip"
-elif [[ "$ARCH" == "aarch64" ]]; then
+elif [ "$ARCH" = "aarch64" ]; then
     AWSCLI_ZIP="awscli-exe-linux-aarch64.zip"
 else
     echo "Unsupported architecture: $ARCH"
