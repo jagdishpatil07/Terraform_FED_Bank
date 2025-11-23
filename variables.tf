@@ -29,9 +29,7 @@ variable "uat_app_instance_type" {
 }
 
 variable "uat_db_instance_type" {
-  description = "Instance type for UAT DB server"
-  type        = string
-  default     = "t3g.xlarge"
+  default = "t3.xlarge"
 }
 
 variable "prod_app_instance_type" {
@@ -99,3 +97,4 @@ variable "fedbank_ssh_key_name" {
   type        = string
   default     = ""
 }
+
