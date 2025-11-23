@@ -63,3 +63,124 @@ Your client AWS account will get:
 ✔ 1 IAM Policy Attachment
 ✔ 1 IAM Instance Profile
 ✔ 4 EC2 Instances
+
+-----------------------
+
+🏗 1. VPC Infrastructure
+UAT VPC
+
+VPC — aws_vpc.uat
+
+Subnets
+
+aws_subnet.uat_app
+
+aws_subnet.uat_db
+
+Route Table — aws_route_table.uat_priv_rt
+
+Route Table Associations
+
+aws_route_table_association.uat_app_assoc
+
+aws_route_table_association.uat_db_assoc
+
+Route to TGW
+
+aws_route.uat_to_tgw_client
+
+PROD VPC
+
+VPC — aws_vpc.prod
+
+Subnets
+
+aws_subnet.prod_app
+
+aws_subnet.prod_db
+
+Route Table — aws_route_table.prod_priv_rt
+
+Route Table Associations
+
+aws_route_table_association.prod_app_assoc
+
+aws_route_table_association.prod_db_assoc
+
+Route to TGW
+
+aws_route.prod_to_tgw_client
+
+🔗 2. Transit Gateway + Attachments
+
+Your script creates the full TGW infra:
+
+Transit Gateway — aws_ec2_transit_gateway.tgw
+
+TGW VPC Attachments
+
+aws_ec2_transit_gateway_vpc_attachment.uat_attach
+
+aws_ec2_transit_gateway_vpc_attachment.prod_attach
+
+🛣 3. TGW Routing
+
+TGW Route Table — aws_ec2_transit_gateway_route_table.tgw_rt
+
+Routes inside TGW
+
+aws_ec2_transit_gateway_route.tgw_to_uat
+
+aws_ec2_transit_gateway_route.tgw_to_prod
+
+aws_ec2_transit_gateway_route.to_client
+
+🔐 4. Customer VPN Resources
+
+The script creates:
+
+Customer Gateway — aws_customer_gateway.client_cgw
+
+VPN Connection — aws_vpn_connection.tgw_vpn
+
+🔑 5. IAM Resources
+
+These are required for EC2 → SSM connection:
+
+IAM Role — aws_iam_role.ec2_ssm_role
+
+IAM Policy Attachment — aws_iam_role_policy_attachment.ssm_attach
+
+Instance Profile — aws_iam_instance_profile.ec2_ssm_profile
+
+🖧 6. VPC Interface Endpoints (SSM)
+
+These create ENIs in private subnets:
+
+UAT
+
+aws_vpc_endpoint.ssm_ua
+
+aws_vpc_endpoint.ec2msg_ua
+
+aws_vpc_endpoint.ssmmessages_ua
+
+PROD
+
+aws_vpc_endpoint.ssm_prod
+
+aws_vpc_endpoint.ec2msg_prod
+
+aws_vpc_endpoint.ssmmessages_prod
+
+💻 7. EC2 Instances
+
+(Your posted snippet references them; assume they exist later in file)
+
+aws_instance.uat_app
+
+aws_instance.uat_db
+
+aws_instance.prod_app
+
+aws_instance.prod_db
