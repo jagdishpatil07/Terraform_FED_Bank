@@ -40,3 +40,26 @@ Diagram: /mnt/data/722541f7-fd84-41e2-b606-983c96cb2b13.png
 
 5. Apply:
 
+----------------------------------
+RESOURCES:-
+--------------
+📌 TOTAL RESOURCE COUNT
+
+Your client AWS account will get:
+
+✔ 2 VPCs
+✔ 4 Subnets
+✔ 2 Route Tables
+✔ 4 RT Associations
+✔ 2 Routes to TGW
+✔ 1 Transit Gateway
+✔ 2 VPC TGW Attachments
+✔ 1 TGW Route Table
+✔ 3 TGW routes
+✔ 1 Customer Gateway
+✔ 1 VPN Connection
+✔ 6 VPC Interface Endpoints
+✔ 1 IAM Role
+✔ 1 IAM Policy Attachment
+✔ 1 IAM Instance Profile
+✔ 4 EC2 Instances
